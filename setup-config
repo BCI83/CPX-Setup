@@ -26,7 +26,7 @@ subnet_mask:
 default_gateway:
 
 
-#REQUIRED
+#OPTIONAL
 #Please provide at least one DNS server to use (can be internal and/or external)
 dns1:
 dns2:
