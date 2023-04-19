@@ -142,7 +142,7 @@ echo "    (otherwise the hostname will remain 'debian')"
 echo ""
 echo "6 - NTP server IP/FQDN details if you have internal/preferred servers"
 echo "     (otherwise the default public servers will be used)"
-
+echo ""
 echo "7 - Proxy details if required for internet access (IP/FQDN:Port)"
 echo ""
 echo "8 - Your welcome email"
@@ -351,7 +351,7 @@ if [ "$q4" = "Y" ]; then
             echo "And now enter the proxy IP address"
             echo ""
             vip
-            pip=$result  
+            pip=$result
             proxy=$pip":"$pn
             sed -i "s/proxy_ip:.*/proxy_ip: $pip/" /symphony/setup-config
         ;;
@@ -359,7 +359,7 @@ if [ "$q4" = "Y" ]; then
             echo "First, enter just the proxy hostname/FQDN"
             echo ""
             vhn
-            phn=$result           
+            phn=$result
             proxy=$phn":"$pn
             sed -i "s/proxy_fqdn:.*/proxy_fqdn: $phn/" /symphony/setup-config
         ;;
@@ -509,7 +509,7 @@ then
     else
         sed -i "s/ntp_server:.*/ntp_server: $ntpstring/" /symphony/setup-config
     fi
-    
+
     echo "NTP settings applied"
 else
     echo "NTP settings unchanged"
@@ -545,7 +545,7 @@ if [ "$q4" = "Y" ]; then
     echo "export HTTPS_PROXY=\"http://"$proxy"/\"" >> $fn
     echo "export FTP_PROXY=\"http://"$proxy"/\"" >> $fn
     echo "export NO_PROXY=\"127.0.0.1,localhost\"" >> $fn
-    
+
     echo "/etc/profile.d/proxy.sh file populated successfully"
     echo "Proxy settings configured"
 else
@@ -722,7 +722,7 @@ if [ "$portal6_reachable" != "OK" ] || [ "$portal5_reachable" != "OK" ] || [ "$c
         echo "A Proxy was configured, it is likely to be the cause of the connectivity issues"
         echo "Some common solutions include:"
         echo "-If there is a loadbalancer for the proxy you can try configuring this server to send traffic directly to one of the proxy nodes"
-        echo "-Getting a bypass for this sevrer, so that traffic from this server does not go via the proxy" 
+        echo "-Getting a bypass for this sevrer, so that traffic from this server does not go via the proxy"
         echo "-Alternatively, you may need AVI-SPL DevOps assistance to get this CPX running"
     fi
     echo ""
