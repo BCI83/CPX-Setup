@@ -30,7 +30,7 @@ while :; do
         break
     elif [[ $fp = "" ]]; then
         echo "A valid path must be provided"
-    else  
+    else
         echo "Error: no file exists at the path provided"
         echo "(use the full/absolute path, for example '/symphony/"$1".crt')"
     fi
@@ -115,7 +115,7 @@ if [ "$proxy_port" != "" ]; then
         yn
         q2=$result
         clear
-        if [ "$q2" = "Y" ]; then        
+        if [ "$q2" = "Y" ]; then
             proxy_certs_required="yes"
             sed -i "s/proxy_certs_required:.*/proxy_certs_required: yes/" /symphony/setup-config
         else
@@ -146,7 +146,7 @@ if [ "$dmca_cert_uploads_req" = 1 ] || [ "$proxy_certs_required" = "yes" ]; then
     if [ $needinput=1 ]; then
         clear
         echo ""
-        echo "Certificates are required for:" 
+        echo "Certificates are required for:"
         if [ "$dmca_cert_uploads_req" = 1 ]; then
             if [ "$dmca_file_name" = "" ] || [ "$dmca_file_path" = "" ]; then
                 echo ""
@@ -163,7 +163,7 @@ if [ "$dmca_cert_uploads_req" = 1 ] || [ "$proxy_certs_required" = "yes" ]; then
             fi
         fi
 
-        while :; do        
+        while :; do
             echo ""
             echo "Choose from the options below"
             echo ""
@@ -185,10 +185,10 @@ if [ "$dmca_cert_uploads_req" = 1 ] || [ "$proxy_certs_required" = "yes" ]; then
         case $proxycertsq in
             1)
             ip=$(cat /symphony/setup-config | grep -oP '(?<=ip_address:).*')
-            ip="${ip// /}"  
+            ip="${ip// /}"
             echo "(This server can be reached at 'symphony@"$ip"' and providing the '5ym...' password when prompted)"
             echo ""
-            ;;            
+            ;;
             2)
             if [ "$proxy_certs_required" = "yes" ]; then
                 proxy_ca=$(cat /symphony/setup-config | grep -oP '(?<=ca_certificate:).*')
@@ -227,7 +227,7 @@ if [ "$dmca_cert_uploads_req" = 1 ] || [ "$proxy_certs_required" = "yes" ]; then
                         sed -i "s/ca_certificate:.*/ca_certificate: $result/" /symphony/setup-config
                         verify_file_path "Proxy Intermediate"
                         sed -i "s/intermediate_certificate:.*/intermediate_certificate: $result/" /symphony/setup-config
-                        ;;        
+                        ;;
                     esac
                 fi
             fi
@@ -302,7 +302,7 @@ if [ "$sym_an" = "" ]; then
             echo ""
         fi
     done
-    clear 
+    clear
 fi
 
 # get account number
@@ -327,7 +327,7 @@ if [ "$sym_id" = "" ]; then
             echo "Check that is only consists of the allowed characters (include the hyphens)"
         fi
     done
-    clear  
+    clear
 fi
 
 # select a portal
@@ -355,7 +355,7 @@ if [ "$sym_portal" = "" ]; then
             fi
     done
     sed -i "s'account_portal:.*'account_portal: $portal'" /symphony/setup-config
-    clear    
+    clear
 fi
 
 # get cpx user email
@@ -487,3 +487,4 @@ echo "$playbook" >> $pb
 
 sudo -u symphony ansible-playbook $pb
 sed -i "s'setup_run:.*'setup_run: yes'" /symphony/setup-config
+
