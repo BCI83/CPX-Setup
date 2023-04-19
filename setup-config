@@ -1,42 +1,42 @@
 ########################  Setup Stage  #############################
-setup_run: 
+setup_run:
 #######################  Network Checks  ###########################
-gw_ping: 
-ip_8.8.8.8: 
-ip_resolve: 
-wget_portal6: 
-wget_portal5: 
-wget_cloud6: 
-wget_cloud5: 
-wget_registry: 
+gw_ping:
+ip_8.8.8.8:
+ip_resolve:
+wget_portal6:
+wget_portal5:
+wget_cloud6:
+wget_cloud5:
+wget_registry:
 ################### VM  Network Configuration ######################
 
 #REQUIRED
 #Please provide the IP address to assign to this VM
-ip_address: 
+ip_address:
 
 #REQUIRED
 #Please provide the Subnet Mask for the above IP address
 #(Use slash notation, eg: /24 or /28 etc.)
-subnet_mask: 
+subnet_mask:
 
 
 #REQUIRED
 #Please provide the Default Gateway for this network
-default_gateway: 
+default_gateway:
 
 
-#OPTIONAL
+#REQUIRED
 #Please provide at least one DNS server to use (can be internal and/or external)
-dns1: 
-dns2: 
-dns3: 
+dns1:
+dns2:
+dns3:
 
 
 #OPTIONAL
 #Please provide the new hostname you want this VM to have (leave blank to keep 'debian')
 #( Use only a to z, A to Z, 0 to 9, and hyphen (-) )
-hostname: 
+hostname:
 
 
 #OPTIONAL
@@ -75,29 +75,29 @@ proxy_certs_required:
 
 #Please provide your Symphony account name (REQUIRED)
 # No spaces, only use a-z, A-Z, hyphen (-), underscore (_)
-account_name: 
+account_name:
 
 
 #Please provide your Symphony account ID (REQUIRED)
-account_id: 
+account_id:
 
 
 #Which Symphony Portal are you connecting to? DEV/INT/PROD/EMEA? (REQUIRED)
-account_portal: 
+account_portal:
 
 
 #Please provide your CPX username (REQUIRED)
 #If it is over 32 characters reach out to your AVI-SPL
 #contact and have them generate you a smaller one)
-cpx_serviceUserEmail: 
+cpx_serviceUserEmail:
 
 
 #Please provide your CPX password (REQUIRED)
-cpx_serviceUserPassword: 
+cpx_serviceUserPassword:
 
 
 #Are you using DMCA?   (Leave blank to skip)
-dmca_config_check: 
+dmca_config_check:
 
 
 #Please enter the name of your SSL Certificate   (Leave blank to skip)
@@ -109,3 +109,4 @@ ssl_cert_file_pass:
 
 #Please enter the location of your SSL Certificate file (ex: /tmp )   (Leave blank to skip)
 ssl_cert_file_location:
+
