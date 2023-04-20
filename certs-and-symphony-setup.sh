@@ -613,5 +613,5 @@ fi
 echo ""
 
 # indicate the setup finished in the setup-config file
-sed -i "s'setup_run:.*'setup_run: yes'" /symphony/setup-config
+sed -i "s'setup_finished:.*'setup_finished: yes'" /symphony/setup-config
 
