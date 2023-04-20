@@ -583,30 +583,32 @@ if [[ $(crontab -l | head -n 1) != "MAILTO=\"\"" ]]; then
     (echo "MAILTO=\"\""; crontab -l) | crontab -
 fi
 
-# save and display external IP
+### save and display external IP
 echo ""
 echo "Attempting to get the external IP of this server"
 echo ""
 curl_1=$(curl -s ifconfig.me)
 if [ $curl_1 != "" ]; then
-    echo "External IP = "$curl_1
+    external_ip=$curl_1
 else
-    echo "Unable to get external IP from 1st provider... trying the next one."
+    echo "Unable to get external IP from 'ifconfig.me'... trying the next one."
     echo ""
     curl_2=$(curl -s ipinfo.io/ip)
     if [ $curl_2 != "" ]; then
-        echo "External IP = "$curl_2
+        external_ip=$curl_2
     else
-        echo "Unable to get external IP from 2nd provider... trying the last one."
+        echo "Unable to get external IP from 'ipinfo.io/ip'... trying the last one."
         echo ""
         curl_3=$(curl -s api.ipify.org)
-        echo "External IP = "$curl_3
         if [ $curl_3 != "" ]; then
-            echo "External IP = "$curl_3
+            external_ip=$curl_3
         else
-            echo "Unable to get external IP"
+            echo "Unable to get external IP from 'api.ipify.org'"
         fi
     fi
+fi
+if [ $external_ip != "" ]; then
+    echo "The external IP of this server is : "$external_ip
 fi
 echo ""
 
