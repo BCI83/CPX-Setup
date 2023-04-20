@@ -740,13 +740,13 @@ if [ "$portal6_reachable" != "OK" ] || [ "$portal5_reachable" != "OK" ] || [ "$c
         # trigger the login script again
         sudo su -
     fi
+else
+    sed -i "s/portal6:.*/portal6: $portal6_reachable/" /symphony/setup-config
+    sed -i "s/portal5:.*/portal5: $portal5_reachable/" /symphony/setup-config
+    sed -i "s/cloud6:.*/cloud6: $cloud6_reachable/" /symphony/setup-config
+    sed -i "s/cloud5:.*/cloud5: $cloud5_reachable/" /symphony/setup-config
+    sed -i "s/registry:.*/registry: $registry_reachable/" /symphony/setup-config
 fi
-
-sed -i "s/portal6:.*/portal6: $portal6_reachable/" /symphony/setup-config
-sed -i "s/portal5:.*/portal5: $portal5_reachable/" /symphony/setup-config
-sed -i "s/cloud6:.*/cloud6: $cloud6_reachable/" /symphony/setup-config
-sed -i "s/cloud5:.*/cloud5: $cloud5_reachable/" /symphony/setup-config
-sed -i "s/registry:.*/registry: $registry_reachable/" /symphony/setup-config
 
 echo ""
 echo "---------------------------------------------------------------------------"
@@ -774,5 +774,3 @@ if [ "$c_or_q" = "N" ]; then
     elif [ "$c_or_q" = "Y" ]; then
     sudo su -
 fi
-
-sed -i "s/registry:.*/registry: $registry_reachable/" /symphony/setup-config
