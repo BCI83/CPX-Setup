@@ -20,11 +20,11 @@ while :; do
 done
 }
 # verify user provided file exists at specified path
-verify_file_path(){
+verify_file_exists(){
 while :; do
     echo ""
     read -p "Enter the absolute path fo the $1 certificate: " fp
-    if [[ -f $fp ]]; then
+    if [[ -f $fp ]]; then        
         result=$fp
         clear
         break
@@ -58,7 +58,24 @@ while :; do
         fi
 done
 }
-
+# add CA certificate to OS
+apply_ca_int_cert(){
+    cert_success=0
+    # check if file is a .pem file
+    if [[ "$1" == *.pem ]]; then
+        # rename .pem file to .crt
+        mv "$1" "${1%.pem}.crt"           
+    fi
+    if [[ "$1" == *.crt ]]; then
+        # copy renamed file to /usr/local/share/ca-certificates/
+        cp "${1%.pem}.crt" /usr/local/share/ca-certificates/
+        # run update-ca-certificates command
+        update-ca-certificates
+        cert_success=1
+    else
+        echo "ERROR: The certificate '"$1"' is not a .pem or .crt file"
+    fi
+}
 ### Main()
 clear
 # check session type
@@ -158,8 +175,7 @@ if [ "$dmca_cert_uploads_req" = 1 ] || [ "$proxy_certs_required" = "yes" ]; then
             if [ "$proxy_ca" = "" ] && [ "$proxy_int" = "" ]; then
                 echo ""
                 echo "-Proxy functionality"
-                echo " (CA certificate that the proxy uses)"
-                echo " (Intermediate certificate if available)"
+                echo " (Root CA or Intermediate certificate that the proxy uses)"
             fi
         fi
 
@@ -199,14 +215,15 @@ if [ "$dmca_cert_uploads_req" = 1 ] || [ "$proxy_certs_required" = "yes" ]; then
                     while :; do
                         clear
                         echo ""
-                        echo "Which proxy certificates do you want to provide?"
+                        echo "Which proxy certificate do you want to provide?"
+                        echo "Certificates must be in .crt or .pem format"
+                        echo "(one certificate per file, no chains)"
                         echo ""
-                        echo "1 - A CA Certificate"
+                        echo "1 - A Root CA Certificate"
                         echo "2 - An Intermediate Certificate"
-                        echo "3 - Both Certificates"
                         echo ""
                         read -p "Enter your selection: " proxycertsq
-                        if (($proxycertsq >= 1 && $proxycertsq <= 3)); then
+                        if (($proxycertsq >= 1 && $proxycertsq <= 2)); then
                             echo ""
                             break
                         else
@@ -215,21 +232,91 @@ if [ "$dmca_cert_uploads_req" = 1 ] || [ "$proxy_certs_required" = "yes" ]; then
                     done
                     case $proxycertsq in
                         1)
-                        verify_file_path "Proxy CA"
+                        verify_file_exists "Proxy CA"
+                        apply_ca_int_cert $result
                         sed -i "s/ca_certificate:.*/ca_certificate: $result/" /symphony/setup-config
                         ;;
                         2)
-                        verify_file_path "Proxy Intermediate"
-                        sed -i "s/intermediate_certificate:.*/intermediate_certificate: $result/" /symphony/setup-config
-                        ;;
-                        3)
-                        verify_file_path "Proxy CA"
-                        sed -i "s/ca_certificate:.*/ca_certificate: $result/" /symphony/setup-config
-                        verify_file_path "Proxy Intermediate"
+                        verify_file_exists "Proxy Intermediate"
+                        apply_ca_int_cert $result
                         sed -i "s/intermediate_certificate:.*/intermediate_certificate: $result/" /symphony/setup-config
                         ;;
                     esac
                 fi
+                # Test WGETs to the Symphony URLs now the Proxy cert has been applied
+                portal6="https://portal.vnocsymphony.com"
+                portal5="https://portal5.avisplsymphony.com/symphony-portal"
+                cloud6="https://cloud.vnocsymphony.com"
+                cloud5="https://cloud5.avisplsymphony.com/symphony-cloud-api"
+                registry="https://registry.vnocsymphony.com"
+
+                echo "#####################################################################################################"
+                reply1=$(wget -T 3 --no-check-certificate --delete-after ${portal6} 2>&1)
+                c1=$(echo "$reply1" |grep "connected")
+                if [ `expr length "$c1"` != "0" ]; then
+                    echo $portal6
+                    echo "Is reachable"
+                    portal6_reachable="OK"
+                else
+                    echo $portal6
+                    echo "Is NOT reachable"
+                    portal6_reachable="Failed"
+                fi
+                echo "#####################################################################################################"
+                reply2=$(wget -T 3 --no-check-certificate --delete-after ${portal5} 2>&1)
+                c2=$(echo "$reply2" |grep "connected")
+                if [ `expr length "$c2"` != "0" ]; then
+                    echo $portal5
+                    echo "Is reachable"
+                    portal5_reachable="OK"
+                else
+                    echo $portal5
+                    echo "Is NOT reachable"
+                    portal5_reachable="FAIL"
+                fi
+                echo "#####################################################################################################"
+                reply3=$(wget -T 3 --no-check-certificate --delete-after ${cloud6} 2>&1)
+                c3=$(echo "$reply3" |grep "connected")
+                if [ `expr length "$c3"` != "0" ]; then
+                    echo $cloud6
+                    echo "Is reachable"
+                    cloud6_reachable="OK"
+                else
+                    echo $cloud6
+                    echo "Is NOT reachable"
+                    cloud6_reachable="FAIL"
+                fi
+                echo "#####################################################################################################"
+                reply4=$(wget -T 3 --no-check-certificate --delete-after ${cloud5} 2>&1)
+                c4=$(echo "$reply4" |grep "connected")
+                if [ `expr length "$c4"` != "0" ]; then
+                    echo $cloud5
+                    echo "Is reachable"
+                    cloud5_reachable="OK"
+                else
+                    echo $cloud5
+                    echo "Is NOT reachable"
+                    cloud5_reachable="FAIL"
+                fi
+                echo "#####################################################################################################"
+                reply5=$(wget -T 3 --no-check-certificate --delete-after ${registry} 2>&1)
+                c5=$(echo "$reply5" |grep "connected")
+                if [ `expr length "$c5"` != "0" ]; then
+                    echo $registry
+                    echo "Is reachable"
+                    registry_reachable="OK"
+                else
+                    echo $registry
+                    echo "Is NOT reachable"
+                    registry_reachable="FAIL"
+                fi
+                echo "#####################################################################################################"
+
+                sed -i "s/wget_portal6:.*/wget_portal6: $portal6_reachable/" /symphony/setup-config
+                sed -i "s/wget_portal5:.*/wget_portal5: $portal5_reachable/" /symphony/setup-config
+                sed -i "s/wget_cloud6:.*/wget_cloud6: $cloud6_reachable/" /symphony/setup-config
+                sed -i "s/wget_cloud5:.*/wget_cloud5: $cloud5_reachable/" /symphony/setup-config
+                sed -i "s/wget_registry:.*/wget_registry: $registry_reachable/" /symphony/setup-config
             fi
             if [ "$dmca_cert_uploads_req" = 1 ]; then
                 dmca_file_name=$(cat /symphony/setup-config | grep -oP '(?<=ssl_cert_file_name:).*')
@@ -240,7 +327,7 @@ if [ "$dmca_cert_uploads_req" = 1 ] || [ "$proxy_certs_required" = "yes" ]; then
                 dmca_cert_pw="${dmca_cert_pw// /}"
                 if [ "$dmca_file_name" = "" ] || [ "$dmca_file_path" = "" ] || [ "$dmca_cert_pw" = "" ]; then
                         if [ "$dmca_file_name" = "" ]; then
-                                verify_file_path "DMCA SSL"
+                                verify_file_exists "DMCA SSL"
                                 dmca_ssl_file_name=$(echo $result | sed 's:.*/::') # get everything after the last / (the file name)
                                 dmca_ssl_file_path="$(dirname "$result")" # get the directory name
                                 dmca_ssl_file_path=$(echo $dmca_ssl_file_path | sed -e 's/[\/&]/\\&/g') # Escape / and &
@@ -482,9 +569,47 @@ pb="/symphony/symphony-cpx-ansible-role/new_start.yml"
 if [ ! -f $pb ]; then
     sudo -u symphony touch $pb
 fi
-sudo -u symphony > $pb # make sure it's empty in case of pre-existing file
-echo "$playbook" >> $pb
+# create/overwrite and populate the playbook 
+echo "$playbook" > $pb
 
+### run the start_here.yml ansible playbook
 sudo -u symphony ansible-playbook $pb
+
+### edit crontab
+# remove duplicate lines
+crontab -l | sort -u | crontab -
+# if MAILTO="" isn't on the top line, then add it to first line
+if [[ $(crontab -l | head -n 1) != "MAILTO=\"\"" ]]; then
+    (echo "MAILTO=\"\""; crontab -l) | crontab -
+fi
+
+# save and display external IP
+echo ""
+echo "Attempting to get the external IP of this server"
+echo ""
+curl_1=$(curl -s ifconfig.me)
+if [ $curl_1 != "" ]; then
+    echo "External IP = "$curl_1
+else
+    echo "Unable to get external IP from 1st provider... trying the next one."
+    echo ""
+    curl_2=$(curl -s ipinfo.io/ip)
+    if [ $curl_2 != "" ]; then
+        echo "External IP = "$curl_2
+    else
+        echo "Unable to get external IP from 2nd provider... trying the last one."
+        echo ""
+        curl_3=$(curl -s api.ipify.org)
+        echo "External IP = "$curl_3
+        if [ $curl_3 != "" ]; then
+            echo "External IP = "$curl_3
+        else
+            echo "Unable to get external IP"
+        fi
+    fi
+fi
+echo ""
+
+# indicate the setup finished in the setup-config file
 sed -i "s'setup_run:.*'setup_run: yes'" /symphony/setup-config
 

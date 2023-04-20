@@ -719,11 +719,11 @@ if [ "$portal6_reachable" != "OK" ] || [ "$portal5_reachable" != "OK" ] || [ "$c
     fi
     echo ""
     if [ "$pn" != "" ]; then
-        echo "A Proxy was configured, it is likely to be the cause of the connectivity issues"
-        echo "Some common solutions include:"
-        echo "-If there is a loadbalancer for the proxy you can try configuring this server to send traffic directly to one of the proxy nodes"
-        echo "-Getting a bypass for this sevrer, so that traffic from this server does not go via the proxy"
-        echo "-Alternatively, you may need AVI-SPL DevOps assistance to get this CPX running"
+        echo "As a Proxy was specified, it is the most likely cause of the connectivity issues"
+        echo "You will need to upload at least the Proxy Root/Intermediate certificate" 
+        #echo "-If there is a loadbalancer for the proxy you can try configuring this server to send traffic directly to one of the proxy nodes"
+        #echo "-Getting a bypass for this sevrer, so that traffic from this server does not go via the proxy"
+        #echo "-Alternatively, you may need AVI-SPL DevOps assistance to get this CPX running"
     fi
     echo ""
     echo "#########################################################################"
