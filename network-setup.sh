@@ -724,21 +724,22 @@ if [ "$portal6_reachable" != "OK" ] || [ "$portal5_reachable" != "OK" ] || [ "$c
         #echo "-If there is a loadbalancer for the proxy you can try configuring this server to send traffic directly to one of the proxy nodes"
         #echo "-Getting a bypass for this sevrer, so that traffic from this server does not go via the proxy"
         #echo "-Alternatively, you may need AVI-SPL DevOps assistance to get this CPX running"
+    else
+        echo ""
+        echo "#########################################################################"
+        echo ""
+        echo "Symphony connectivity test failed"
+        echo ""
+        read -rsp $'Press any key to restart this part of the setup script again...' -n1 key
+        # clear the values from the setup-config file
+        sed -i "s/wget_portal6:.*/wget_portal6: /" /symphony/setup-config
+        sed -i "s/wget_portal5:.*/wget_portal5: /" /symphony/setup-config
+        sed -i "s/wget_cloud6:.*/wget_cloud6: /" /symphony/setup-config
+        sed -i "s/wget_cloud5:.*/wget_cloud5: /" /symphony/setup-config
+        sed -i "s/wget_registry:.*/wget_registry: /" /symphony/setup-config
+        # trigger the login script again
+        sudo su -
     fi
-    echo ""
-    echo "#########################################################################"
-    echo ""
-    echo "Connectivity test failed"
-    echo ""
-    read -rsp $'Press any key to restart this part of the setup script again...' -n1 key
-    # clear the values from the setup-config file
-    sed -i "s/wget_portal6:.*/wget_portal6: /" /symphony/setup-config
-    sed -i "s/wget_portal5:.*/wget_portal5: /" /symphony/setup-config
-    sed -i "s/wget_cloud6:.*/wget_cloud6: /" /symphony/setup-config
-    sed -i "s/wget_cloud5:.*/wget_cloud5: /" /symphony/setup-config
-    sed -i "s/wget_registry:.*/wget_registry: /" /symphony/setup-config
-    # trigger the login script again
-    sudo su -
 fi
 
 sed -i "s/portal6:.*/portal6: $portal6_reachable/" /symphony/setup-config
