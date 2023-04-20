@@ -46,6 +46,8 @@ ntp_server:
 #  OR
 ntp_pool:
 
+# External IP is retrieved during setup
+external_ip:
 
 ####################################################################
 ######################## Proxy Details #############################
