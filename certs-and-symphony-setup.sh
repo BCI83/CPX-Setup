@@ -614,4 +614,6 @@ echo ""
 
 # indicate the setup finished in the setup-config file
 sed -i "s'setup_finished:.*'setup_finished: yes'" /symphony/setup-config
-
+echo ""
+echo "Setup has finished, monitor the CPX latency graph in symphony"
+echo "Activity should start in the next few minutes"
