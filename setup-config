@@ -11,43 +11,40 @@ wget_cloud5:
 wget_registry:
 ################### VM  Network Configuration ######################
 
-#REQUIRED
 #Please provide the IP address to assign to this VM
 ip_address:
 
-#REQUIRED
+
 #Please provide the Subnet Mask for the above IP address
 #(Use slash notation, eg: /24 or /28 etc.)
 subnet_mask:
 
 
-#REQUIRED
 #Please provide the Default Gateway for this network
 default_gateway:
 
 
-#REQUIRED
 #Please provide at least one DNS server to use (can be internal and/or external)
 dns1:
 dns2:
 dns3:
 
 
-#OPTIONAL
 #Please provide the new hostname you want this VM to have (leave blank to keep 'debian')
 #( Use only a to z, A to Z, 0 to 9, and hyphen (-) )
 hostname:
 
 
-#OPTIONAL
 #Please provide an NTP server IP/Hostname or NTP Pool VIP/FQDN
 #( Leave blank to use the default Debian NTP pool )
 ntp_server:
 #  OR
 ntp_pool:
 
+
 # External IP is retrieved during setup
 external_ip:
+
 
 ####################################################################
 ######################## Proxy Details #############################
@@ -108,6 +105,7 @@ ssl_cert_file_name:
 
 #Please enter the password of your SSL Certificate   (Leave blank to skip)
 ssl_cert_file_pass:
+
 
 #Please enter the location of your SSL Certificate file (ex: /tmp )   (Leave blank to skip)
 ssl_cert_file_location:
