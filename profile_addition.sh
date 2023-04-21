@@ -8,11 +8,20 @@ if [ -f /symphony/setup-config ]; then
         gw="${gw// /}"
         dns=$(cat /symphony/setup-config | grep -oP '(?<=dns1:).*')
         dns="${dns// /}"
-        aid=$(cat /symphony/setup-config | grep -oP '(?<=account_id:).*')
-        aid="${aid// /}"
-        dns1=$(cat /symphony/setup-config | grep -oP '(?<=dns1:).*')
-        dns1="${dns1// /}"
+
+        an=$(cat /symphony/setup-config | grep -oP '(?<=account_name:).*')
+        an="${an// /}"
+        id=$(cat /symphony/setup-config | grep -oP '(?<=account_id:).*')
+        id="${id// /}"
+        ap=$(cat /symphony/setup-config | grep -oP '(?<=account_portal:).*')
+        ap="${ap// /}"        
+        ue=$(cat /symphony/setup-config | grep -oP '(?<=cpx_serviceUserEmail:).*')
+        ue="${ue// /}"
+        pw=$(cat /symphony/setup-config | grep -oP '(?<=cpx_serviceUserPassword:).*')
+        pw="${pw// /}"
+
         user=$(whoami)
+        
         if [ "$ip" = "" ] || [ "$nm" = "" ] || [ "$gw" = "" ] || [ "$dns" = "" ]; then
                 if [ "$user" = "root" ]; then
                         cd /symphony/
@@ -27,7 +36,7 @@ if [ -f /symphony/setup-config ]; then
                                 sudo su -
                         fi
                 fi
-        elif [ "$aid" = "" ]; then
+        elif [ "$an" = "" ] || [ "$id" = "" ] || [ "$ap" = "" ] || [ "$ue" = "" ] || [ "$pw" = "" ]; then
                 if [ "$user" = "root" ]; then
                         cd /symphony/
                         ./certs-and-symphony-setup.sh
