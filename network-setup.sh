@@ -175,14 +175,23 @@ clear
 echo ""
 echo "Please provide the subnet mask for the "$ip " address in slash notation"
 echo "( for example /24 or /27 or /28 )"
+echo "255.255.255.252 = /30	255.255.255.248	= /29
+255.255.255.240	= /28	255.255.255.224	= /27
+255.255.255.192	= /26	255.255.255.128	= /25
+255.255.255.0	= /24	255.255.254.0 = /23
+255.255.252.0	= /22	255.255.248.0 = /21
+"
 echo ""
 while :; do
     read -p "Enter the subnet mask: /" sn
     echo $sn
-    if (($sn >= 20 && $sn <= 30)); then
-        echo ""
-        break
-    else
+    if [ ${#sn} = 1 ] || [ ${#sn} = 2 ]; then
+        if (($sn >= 20 && $sn <= 30)); then
+            echo ""
+            break
+        else
+            echo "not a valid subnet mask, please try again"
+        fi
         echo "not a valid subnet mask, please try again"
     fi
 done
@@ -545,6 +554,8 @@ if [ "$q4" = "Y" ]; then
     echo "export HTTPS_PROXY=\"http://"$proxy"/\"" >> $fn
     echo "export FTP_PROXY=\"http://"$proxy"/\"" >> $fn
     echo "export NO_PROXY=\"127.0.0.1,localhost\"" >> $fn
+
+    chmod +x /etc/profile.d/proxy.sh
 
     echo "/etc/profile.d/proxy.sh file populated successfully"
     echo "Proxy settings configured"
