@@ -556,7 +556,8 @@ if [ "$q4" = "Y" ]; then
     echo "export NO_PROXY=\"127.0.0.1,localhost\"" >> $fn
 
     chmod +x /etc/profile.d/proxy.sh
-
+    /etc/profile.d/proxy.sh
+    
     echo "/etc/profile.d/proxy.sh file populated successfully"
     echo "Proxy settings configured"
 else

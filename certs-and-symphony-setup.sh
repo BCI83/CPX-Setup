@@ -612,6 +612,12 @@ if [ $external_ip != "" ]; then
 fi
 echo ""
 
+### make the logs folder for cron
+echo ""
+mkdir /symphony/cpx/logs
+echo "Cron longs folder created"
+echo ""
+
 # indicate the setup finished in the setup-config file
 sed -i "s'setup_finished:.*'setup_finished: yes'" /symphony/setup-config
 echo "Setup has finished, monitor the CPX latency graph in symphony"
