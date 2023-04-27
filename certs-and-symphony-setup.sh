@@ -8,11 +8,11 @@ while :; do
   read -p "y or n ? : " q
   if [ "$q" = "y" ] || [ "$q" = "Y" ] || [ "$q" = "YES" ] || [ "$q" = "yes" ] || [ "$q" = "Yes" ]
   then
-  result="Y"
+  ynresult="Y"
   break
   elif [ "$q" = "n" ] || [ "$q" = "N" ] || [ "$q" = "NO" ] || [ "$q" = "no" ] || [ "$q" = "No" ]
   then
-  result="N"
+  ynresult="N"
   break
   else
     echo "not a valid response, please indicate either yes or no"
@@ -61,19 +61,37 @@ done
 # add CA certificate to OS
 apply_ca_int_cert(){
     cert_success=0
-    # check if file is a .pem file
-    if [[ "$1" == *.pem ]]; then
-        # rename .pem file to .crt
-        mv "$1" "${1%.pem}.crt"           
+    verify_file_exists $1
+    echo ""
+    noex=${result%.*} # gets the full path without the file extension
+    cert="$(openssl x509 -in $result -inform der -text -noout 2>&1)"
+    if [[ "$cert" == Certificate:* ]]; then # it's DER encoded
+        if [[ "${result,,}" == *.crt || "${result,,}" == *.cer ]]; then # "${result,,}" is converting to lower case
+            openssl x509 -inform der -in $result -out $noex.crt
+            result=$noex".crt"
+        elif [[ "${result,,}" == *.der ]]; then
+            openssl x509 -inform der -in $result -outform pem -out $noex.crt
+            result=$noex".crt"
+        fi
+    else
+        cert="$(cat $result)"
+        if [[ "$cert" == *"BEGIN CERTIFICATE"* ]]; then # it's PEM encoded
+            mv $result $noex".crt" # rename it to .crt
+            result=$noex".crt" # update the value of $result
+        fi    
     fi
-    if [[ "$1" == *.crt ]]; then
+    if [[ "${result,,}" == *.crt ]]; then
         # copy renamed file to /usr/local/share/ca-certificates/
-        cp "${1%.pem}.crt" /usr/local/share/ca-certificates/
+        cp "$result" /usr/local/share/ca-certificates/
         # run update-ca-certificates command
         update-ca-certificates
         cert_success=1
     else
-        echo "ERROR: The certificate '"$1"' is not a .pem or .crt file"
+        echo "ERROR: Unsupported certificate type, please convert it to a PEM or DER encoded certificate type."
+        echo ""
+        echo "The script will now quit, once you have converted the certificate/s to valid DER/PEM files"
+        echo "you can resume this script by either restarting the server, or running the command 'sudo su -'"
+        exit 0  
     fi
 }
 ### Main()
@@ -100,7 +118,7 @@ if [ "$dmca_config" = "" ]; then
     echo "Do you intend to use DMCA? (for monitoring of Windows based devices)"
     echo ""
     yn
-    q1=$result
+    q1=$ynresult
     clear
     if [ "$q1" = "Y" ]; then
         dmca_cert_uploads_req=1
@@ -130,7 +148,7 @@ if [ "$proxy_port" != "" ]; then
         echo "(If yes you need to provide certificate(s) for this)"
         echo ""
         yn
-        q2=$result
+        q2=$ynresult
         clear
         if [ "$q2" = "Y" ]; then
             proxy_certs_required="yes"
@@ -216,14 +234,14 @@ if [ "$dmca_cert_uploads_req" = 1 ] || [ "$proxy_certs_required" = "yes" ]; then
                         clear
                         echo ""
                         echo "Which proxy certificate do you want to provide?"
-                        echo "Certificates must be in .crt or .pem format"
-                        echo "(one certificate per file, no chains)"
+                        echo "Certificates must be a valid DER or PEM encoded type (.der/.pem/.cer/.crt)"
                         echo ""
-                        echo "1 - A Root CA Certificate"
-                        echo "2 - An Intermediate Certificate"
+                        echo "1 - A Proxy Root CA Certificate"
+                        echo "2 - An Proxy Intermediate Certificate"
+                        echo "3 - Both CA and Intermediate Certificates"  ### need to also add option for CA cert for SSL/HTTPS proxy
                         echo ""
                         read -p "Enter your selection: " proxycertsq
-                        if (($proxycertsq >= 1 && $proxycertsq <= 2)); then
+                        if (($proxycertsq >= 1 && $proxycertsq <= 3)); then
                             echo ""
                             break
                         else
@@ -232,14 +250,26 @@ if [ "$dmca_cert_uploads_req" = 1 ] || [ "$proxy_certs_required" = "yes" ]; then
                     done
                     case $proxycertsq in
                         1)
-                        verify_file_exists "Proxy CA"
-                        apply_ca_int_cert $result
-                        sed -i "s/ca_certificate:.*/ca_certificate: $result/" /symphony/setup-config
+                        apply_ca_int_cert "Proxy CA"
+                        if [ "$cert_success" == 1 ]; then
+                            sed -i "s/ca_certificate:.*/ca_certificate: $result/" /symphony/setup-config
+                        fi
                         ;;
                         2)
-                        verify_file_exists "Proxy Intermediate"
-                        apply_ca_int_cert $result
-                        sed -i "s/intermediate_certificate:.*/intermediate_certificate: $result/" /symphony/setup-config
+                        apply_ca_int_cert "Proxy Intermediate"
+                        if [ "$cert_success" == 1 ]; then
+                            sed -i "s/intermediate_certificate:.*/intermediate_certificate: $result/" /symphony/setup-config
+                        fi
+                        ;;
+                        3)
+                        apply_ca_int_cert "Proxy CA"
+                        if [ "$cert_success" == 1 ]; then
+                            sed -i "s/ca_certificate:.*/ca_certificate: $result/" /symphony/setup-config
+                        fi
+                        apply_ca_int_cert "Proxy Intermediate"
+                        if [ "$cert_success" == 1 ]; then
+                            sed -i "s/intermediate_certificate:.*/intermediate_certificate: $result/" /symphony/setup-config
+                        fi
                         ;;
                     esac
                 fi

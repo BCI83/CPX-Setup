@@ -174,8 +174,9 @@ ip=$result
 clear
 echo ""
 echo "Please provide the subnet mask for the "$ip " address in slash notation"
-echo "( for example /24 or /27 or /28 )"
-echo "255.255.255.252 = /30	255.255.255.248	= /29
+echo "( for example /24 or /27 or /28 see below table)
+
+255.255.255.252 = /30	255.255.255.248	= /29
 255.255.255.240	= /28	255.255.255.224	= /27
 255.255.255.192	= /26	255.255.255.128	= /25
 255.255.255.0	= /24	255.255.254.0 = /23
@@ -193,6 +194,16 @@ while :; do
             echo "not a valid subnet mask, please try again"
         fi
         echo "not a valid subnet mask, please try again"
+    elif [ ${#sn} = 3 ]; then # to account for users entering the / even though it's already pre-entered at the input prompt
+        if [[ $sn == /* ]]; then
+            sn="${sn:1}"
+            if (($sn >= 20 && $sn <= 30)); then
+                echo ""
+                break
+            else
+                echo "not a valid subnet mask, please try again"
+            fi
+        fi
     fi
 done
 clear
@@ -531,7 +542,6 @@ if [ "$q4" = "Y" ]; then
     if [ ! -f /etc/profile.d/proxy.sh ]; then
         touch /etc/profile.d/proxy.sh
         echo "/etc/profile.d/proxy.sh file successfully created"
-        cp /etc/profile.d/proxy.sh /etc/profile.d/proxy.sh.orig
         echo "Backed up /etc/profile.d/proxy.sh successfully"
     else
         echo "pre-existing /etc/profile.d/proxy.sh file found"
@@ -544,6 +554,7 @@ if [ "$q4" = "Y" ]; then
     fi
     fn="/etc/profile.d/proxy.sh"
     > $fn
+    echo "#!/bin/bash"
     echo "# http/https/ftp/no_proxy" >> $fn
     echo "export http_proxy=\"http://"$proxy"/\"" >> $fn
     echo "export https_proxy=\"http://"$proxy"/\"" >> $fn
@@ -557,7 +568,7 @@ if [ "$q4" = "Y" ]; then
 
     chmod +x /etc/profile.d/proxy.sh
     /etc/profile.d/proxy.sh
-    
+
     echo "/etc/profile.d/proxy.sh file populated successfully"
     echo "Proxy settings configured"
 else
