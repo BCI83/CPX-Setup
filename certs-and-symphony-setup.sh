@@ -83,6 +83,8 @@ apply_ca_int_cert(){
     if [[ "${result,,}" == *.crt ]]; then
         # copy renamed file to /usr/local/share/ca-certificates/
         cp "$result" /usr/local/share/ca-certificates/
+        # and copy to the temp folder
+        cp "$result" /symphony/temp-certs
         # run update-ca-certificates command
         update-ca-certificates
         cert_success=1
@@ -248,6 +250,8 @@ if [ "$dmca_cert_uploads_req" = 1 ] || [ "$proxy_certs_required" = "yes" ]; then
                             echo "Not a valid selection, please try again"
                         fi
                     done
+                    # create a temporary folder to stor certs until the account name is provided
+                    mkdir /symphony/temp-certs
                     case $proxycertsq in
                         1)
                         apply_ca_int_cert "Proxy CA"
