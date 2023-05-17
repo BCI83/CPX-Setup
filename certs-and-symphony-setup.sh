@@ -5,13 +5,11 @@
 # validate yes / no answers
 yn(){
 while :; do
-  read -p "y or n ? : " q
-  if [ "$q" = "y" ] || [ "$q" = "Y" ] || [ "$q" = "YES" ] || [ "$q" = "yes" ] || [ "$q" = "Yes" ]
-  then
+  read -rsp $'y or n ? : ' -n1 q
+  if [ "$q" = "y" ] || [ "$q" = "Y" ]; then
   ynresult="Y"
   break
-  elif [ "$q" = "n" ] || [ "$q" = "N" ] || [ "$q" = "NO" ] || [ "$q" = "no" ] || [ "$q" = "No" ]
-  then
+  elif [ "$q" = "n" ] || [ "$q" = "N" ]; then
   ynresult="N"
   break
   else
@@ -45,7 +43,7 @@ while :; do
         clear
         echo ""
         if [[ "$entered_password" =~ [$singleq\\] ]]; then
-                echo ""
+                echo "$ASCII"
                 echo "The entered Password contains at least one forbidden character $singleq or \ "
                 echo ""
                 echo "Check the password again, if it contains a backslash or"
@@ -97,10 +95,22 @@ apply_ca_int_cert(){
     fi
 }
 ### Main()
+ASCII=" ____                        _ 
+/ ___| _   _ _ __ ___  _ __ | |__   ___  _ __  _   _ 
+\___ \| | | | '_ ' _ \| '_ \| '_ \ / _ \| '_ \| | | | 
+ ___) | |_| | | | | | | |_) | | | | (_) | | | | |_| | 
+|____/ \__, |_| |_| |_| .__/|_| |_|\___/|_| |_|\__, | 
+  ____ |___/_  __    _|_|       _              |___/ 
+ / ___|  _ \ \/ /   / ___|  ___| |_ _   _ _ __ 
+| |   | |_) \  /    \___ \ / _ \ __| | | | '_ \ 
+| |___|  __//  \     ___) |  __/ |_| |_| | |_) | 
+ \____|_|  /_/\_\   |____/ \___|\__|\__,_| .__/ 
+                                         |_| 
+"
 clear
 # check session type
 session_type_string=$(who am i | grep tty)
-echo ""
+echo "$ASCII"
 if [ "$session_type_string" = "" ]; then
     session_type="SSH"
     echo "SSH session detected, you should be able to paste your answers in for the upcomming questions."
@@ -116,7 +126,7 @@ clear
 dmca_config=$(cat /symphony/setup-config | grep -oP '(?<=dmca_config_check:).*')
 dmca_config="${dmca_config// /}"
 if [ "$dmca_config" = "" ]; then
-    echo ""
+    echo "$ASCII"
     echo "Do you intend to use DMCA? (for monitoring of Windows based devices)"
     echo ""
     yn
@@ -143,7 +153,7 @@ proxy_port="${proxy_port// /}"
 if [ "$proxy_port" != "" ]; then
     if [ "$proxy_certs_required" = "" ]; then
         clear
-        echo ""
+        echo "$ASCII"
         echo "Proxy configuration was provided in the previous section"
         echo ""
         echo "Does the proxy do certificate fixup / substitution?"
@@ -182,7 +192,7 @@ if [ "$dmca_cert_uploads_req" = 1 ] || [ "$proxy_certs_required" = "yes" ]; then
 
     if [ $needinput=1 ]; then
         clear
-        echo ""
+        echo "$ASCII"
         echo "Certificates are required for:"
         if [ "$dmca_cert_uploads_req" = 1 ]; then
             if [ "$dmca_file_name" = "" ] || [ "$dmca_file_path" = "" ]; then
@@ -209,7 +219,7 @@ if [ "$dmca_cert_uploads_req" = 1 ] || [ "$proxy_certs_required" = "yes" ]; then
             echo ""
             echo "2 - Continue this script, (only if all required certificates are uploaded to this VM, and the full path(s) are known)"
             echo ""
-            read -p "Enter your selection: " proxycertsq
+            read -rsp "Enter your selection: " -n1 proxycertsq
             if (($proxycertsq >= 1 && $proxycertsq <= 2)); then
                 echo ""
                 break
@@ -234,7 +244,7 @@ if [ "$dmca_cert_uploads_req" = 1 ] || [ "$proxy_certs_required" = "yes" ]; then
                 if [ "$proxy_ca" = "" ] &&  [ "$proxy_int" = "" ]; then
                     while :; do
                         clear
-                        echo ""
+                        echo "$ASCII"
                         echo "Which proxy certificate do you want to provide?"
                         echo "Certificates must be a valid DER or PEM encoded type (.der/.pem/.cer/.crt)"
                         echo ""
@@ -242,7 +252,7 @@ if [ "$dmca_cert_uploads_req" = 1 ] || [ "$proxy_certs_required" = "yes" ]; then
                         echo "2 - An Proxy Intermediate Certificate"
                         echo "3 - Both CA and Intermediate Certificates"  ### need to also add option for CA cert for SSL/HTTPS proxy
                         echo ""
-                        read -p "Enter your selection: " proxycertsq
+                        read -rsp "Enter your selection: " -n1 proxycertsq
                         if (($proxycertsq >= 1 && $proxycertsq <= 3)); then
                             echo ""
                             break
@@ -403,7 +413,7 @@ sym_ccpw="${sym_ccpw// /}"
 # get account name
 if [ "$sym_an" = "" ]; then
     while :; do
-        echo ""
+        echo "$ASCII"
         echo "### Account Name ###"
         echo ""
         echo "This can be anything, it will be used to name folders and services on this server"
@@ -429,7 +439,7 @@ fi
 # get account number
 if [ "$sym_id" = "" ]; then
     while :; do
-        echo ""
+        echo "$ASCII"
         echo "### Account ID ###"
         echo ""
         echo "This detail can be found on your welcome letter"
@@ -454,7 +464,7 @@ fi
 # select a portal
 if [ "$sym_portal" = "" ]; then
     while :; do
-            echo ""
+            echo "$ASCII"
             echo "### Portal Selection ###"
             echo ""
             echo "This detail can be found on your welcome letter"
@@ -482,7 +492,7 @@ fi
 # get cpx user email
 if [ "$sym_ccun" = "" ]; then
     while :; do
-        echo ""
+        echo "$ASCII"
         read -p "Enter your Cloud Connector Username: " ccun
 
         if [[ "$ccun" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
@@ -498,7 +508,8 @@ if [ "$sym_ccun" = "" ]; then
 fi
 
 # get cpx user password
-if [ "$dmca_cert_pw" = "" ]; then
+if [ "$sym_ccpw" = "" ]; then
+    echo "$ASCII"
     get_password "Cloud Connector"
     echo ""
     sed -i "s'cpx_serviceUserPassword:.*'cpx_serviceUserPassword: $result'" /symphony/setup-config
@@ -637,14 +648,20 @@ else
         if [ $curl_3 != "" ]; then
             external_ip=$curl_3
         else
-            echo "Unable to get external IP from 'api.ipify.org'"
+            echo "Unable to get external IP from 'api.ipify.org'... trying the last resort."
+            echo ""
+            discover_ip=$(dig @resolver1.opendns.com myip.opendns.com +short)
+            if [ $discover_ip != "" ]; then
+                external_ip=$discover_ip
+            else
+                echo "Unable to get external IP"
+            fi
         fi
     fi
 fi
 if [ $external_ip != "" ]; then
     echo "The external IP of this server is : "$external_ip
 fi
-echo ""
 
 ### make the logs folder for cron
 echo ""
@@ -655,7 +672,7 @@ echo ""
 # indicate the setup finished in the setup-config file
 sed -i "s'setup_finished:.*'setup_finished: yes'" /symphony/setup-config
 echo "Setup has finished, monitor the CPX latency graph in symphony"
-echo "Activity should start in the next few minutes"
+echo "Activity should be visible in Symphony Portal within the next few minutes"
 echo ""
 read -rsp $'Press any key to exit the setup script...' -n1 key
 clear

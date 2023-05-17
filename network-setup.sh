@@ -13,21 +13,20 @@ fi
 #
 # validate yes / no answers
 yn(){
-    while :; do
-        read -p "y or n ? : " q
-        if [ "$q" = "y" ] || [ "$q" = "Y" ] || [ "$q" = "YES" ] || [ "$q" = "yes" ] || [ "$q" = "Yes" ]
-        then
-            result="Y"
-            break
-        elif [ "$q" = "n" ] || [ "$q" = "N" ] || [ "$q" = "NO" ] || [ "$q" = "no" ] || [ "$q" = "No" ]
-        then
-            result="N"
-            break
-        else
-            echo "not a valid response, please indicate either yes or no"
-        fi
-    done
+while :; do
+  read -rsp $'y or n ? : ' -n1 q
+  if [ "$q" = "y" ] || [ "$q" = "Y" ]; then
+  ynresult="Y"
+  break
+  elif [ "$q" = "n" ] || [ "$q" = "N" ]; then
+  ynresult="N"
+  break
+  else
+    echo "not a valid response, please indicate either yes or no"
+  fi
+done
 }
+
 # check IP addresses are valid
 vip(){
     while :; do
@@ -52,9 +51,53 @@ vhn(){
             break
         else
             echo "not a valid hostname, please try again"
+            echo "(exclude http(s):// prefixes)"
         fi
     done
 }
+
+curl_test(){
+    echo "#########################################################"
+    echo ""
+    final_code=""
+    status_code=""
+    subdomain=$(echo "$1" | cut -d. -f1 | cut -d/ -f3)
+    echo "curl --write-out %{http_code} --silent --output /dev/null" $1
+    status_code=$(curl --write-out %{http_code} --silent --output /dev/null $1)
+    echo "HTTP response code "$status_code
+    final_code=$status_code
+    echo ""
+    echo "curl -L --write-out %{http_code} --silent --output /dev/null" $1
+    status_code=$(curl -L --write-out %{http_code} --silent --output /dev/null $1)
+    echo "HTTP response code "$status_code
+    final_code=$final_code"-"$status_code
+    echo ""
+    echo "curl -L -k --write-out %{http_code} --silent --output /dev/null" $1
+    status_code=$(curl -L -k --write-out %{http_code} --silent --output /dev/null $1)
+    echo "HTTP response code "$status_code
+    final_code=$final_code"-"$status_code
+    echo ""
+}
+
+wget_test(){
+        echo "#########################################################"
+        echo ""
+        status_code=""
+        chars=""
+        reply=""
+        subdomain=$(echo "$1" | cut -d. -f1 | cut -d/ -f3)
+        reply=$(wget -T 3 --no-check-certificate --delete-after ${1} 2>&1)
+        chars=$(echo "$reply" |grep "connected")
+        if [ `expr length "$chars"` != "0" ]; then
+            echo $subdomain" OK"
+            status_code="OK"
+        else
+            echo $subdomain" Failed"
+            status_code="Failed"
+        fi
+        echo ""
+}
+
 
 ###########################################################################
 ###############setting up file location variables
@@ -115,18 +158,19 @@ fi
 ###########################################################################
 # starting script
 clear
-echo "  ____                        _"
-echo " / ___| _   _ _ __ ___  _ __ | |__   ___  _ __  _   _"
-echo " \___ \| | | | '_ ' _ \| '_ \| '_ \ / _ \| '_ \| | | |"
-echo "  ___) | |_| | | | | | | |_) | | | | (_) | | | | |_| |"
-echo " |____/ \__, |_| |_| |_| .__/|_| |_|\___/|_| |_|\__, |"
-echo "   ____ |___/_  __    _|_|       _              |___/"
-echo "  / ___|  _ \ \/ /   / ___|  ___| |_ _   _ _ __"
-echo " | |   | |_) \  /    \___ \ / _ \ __| | | | '_ \ "
-echo " | |___|  __//  \     ___) |  __/ |_| |_| | |_) |"
-echo "  \____|_|  /_/\_\   |____/ \___|\__|\__,_| .__/"
-echo "                                          |_|"
-echo ""
+ASCII=" ____                        _ 
+/ ___| _   _ _ __ ___  _ __ | |__   ___  _ __  _   _ 
+\___ \| | | | '_ ' _ \| '_ \| '_ \ / _ \| '_ \| | | | 
+ ___) | |_| | | | | | | |_) | | | | (_) | | | | |_| | 
+|____/ \__, |_| |_| |_| .__/|_| |_|\___/|_| |_|\__, | 
+  ____ |___/_  __    _|_|       _              |___/ 
+ / ___|  _ \ \/ /   / ___|  ___| |_ _   _ _ __ 
+| |   | |_) \  /    \___ \ / _ \ __| | | | '_ \ 
+| |___|  __//  \     ___) |  __/ |_| |_| | |_) | 
+ \____|_|  /_/\_\   |____/ \___|\__|\__,_| .__/ 
+                                         |_| 
+"
+echo "$ASCII"
 echo "You will need the following information to hand before proceeding:"
 echo ""
 echo "1 - The IP address you want to assign to this machine"
@@ -147,12 +191,12 @@ echo "7 - Proxy details if required for internet access (IP/FQDN:Port)"
 echo ""
 echo "8 - Your welcome email"
 echo ""
-echo "------------------------------------------------------------------"
+echo "---------------------------------------------------------------------"
 echo ""
 echo "Do you have all of the required information above?"
 echo ""
 yn
-q1=$result
+q1=$ynresult
 if [ "$q1" = "Y" ]; then
     clear
 elif [ "$q1" = "N" ]; then
@@ -162,9 +206,9 @@ elif [ "$q1" = "N" ]; then
     echo "Please restart this server once you have all of the required information"
     echo ""
     exit 0
-else
-    echo "not a valid response, please indicate either yes or no"
 fi
+clear
+echo "$ASCII"
 echo ""
 echo "Please provide the IP address you want this machine to use"
 echo "( subnetmask information will be collected later )"
@@ -172,15 +216,16 @@ echo ""
 vip
 ip=$result
 clear
+echo "$ASCII"
 echo ""
-echo "Please provide the subnet mask for the "$ip " address in slash notation"
-echo "( for example /24 or /27 or /28 see below table)
+echo "Please provide the subnet mask for the "$ip " address"
+echo "( use slash notation, like /24 or /27 see below table )
 
 255.255.255.252 = /30	255.255.255.248	= /29
 255.255.255.240	= /28	255.255.255.224	= /27
 255.255.255.192	= /26	255.255.255.128	= /25
-255.255.255.0	= /24	255.255.254.0 = /23
-255.255.252.0	= /22	255.255.248.0 = /21
+255.255.255.0	= /24	255.255.254.0   = /23
+255.255.252.0	= /22	255.255.248.0   = /21
 "
 echo ""
 while :; do
@@ -194,7 +239,7 @@ while :; do
             echo "not a valid subnet mask, please try again"
         fi
         echo "not a valid subnet mask, please try again"
-    elif [ ${#sn} = 3 ]; then # to account for users entering the / even though it's already pre-entered at the input prompt
+    elif [ ${#sn} = 3 ]; then # this is to account for users entering the / even though it's already pre-entered at the input prompt
         if [[ $sn == /* ]]; then
             sn="${sn:1}"
             if (($sn >= 20 && $sn <= 30)); then
@@ -207,28 +252,32 @@ while :; do
     fi
 done
 clear
+echo "$ASCII"
 echo ""
 echo "Please provide the default Gateway IP for "$ip
 echo ""
 vip
 gw=$result
 clear
+echo "$ASCII"
 echo ""
 echo "Please provide the first DNS server IP you want this machine to use"
 echo "It can be internal/private and/or external/public"
 echo ""
 vip
-dns1=$result
 clear
+echo "$ASCII"
+dns1=$result
 echo ""
 echo "DNS 1 set to: "$dns1
 echo ""
 echo "do you want to add a second DNS server?"
 echo ""
 yn
-dns2q=$result
+dns2q=$ynresult
 if [ "$dns2q" = "Y" ]; then
     clear
+    echo "$ASCII"
     echo ""
     echo "Please provide the second DNS server IP you want this machine to use"
     echo "It can be internal/private and/or external/public"
@@ -236,6 +285,7 @@ if [ "$dns2q" = "Y" ]; then
     vip
     dns2=$result
     clear
+    echo "$ASCII"   
     echo ""
     echo "DNS 2 set to: "$dns2
     echo ""
@@ -245,9 +295,10 @@ fi
 if [ "$dns2q" = "Y" ]
 then
     yn
-    dns3q=$result
+    dns3q=$ynresult
     if [ "$dns3q" = "Y" ]; then
         clear
+        echo "$ASCII"
         echo ""
         echo "Please provide the third DNS server IP you want this machine to use"
         echo "It can be internal/private and/or external/public"
@@ -259,14 +310,14 @@ then
     fi
 fi
 clear
+echo "$ASCII"
 echo ""
 echo "Do you want to change the hostname of this machine?"
 echo "it is currently set to: debian"
 echo ""
 yn
-q2=$result
+q2=$ynresult
 if [ "$q2" = "Y" ]; then
-    clear
     echo ""
     echo "Please enter the new hostname you want this machine to have"
     echo ""
@@ -281,13 +332,15 @@ else
     echo "not a valid response, please indicate either yes or no"
 fi
 clear
+echo "$ASCII"
 echo ""
 echo "This machine is currently configured to use a pool of NTP servers from ntp.org"
-echo "Do you want to change from that to an internal NTP server/pool?"
+echo "Do you want to provide your own NTP server/pool details?"
 echo ""
 yn
-q3=$result
+q3=$ynresult
 clear
+echo "$ASCII"
 if [ "$q3" = "Y" ]; then
     echo ""
     echo "What information will you be providing?"
@@ -298,7 +351,7 @@ if [ "$q3" = "Y" ]; then
     echo "4 - A single NTP server hostname/FQDN"
     echo ""
     while :; do
-        read -p "Enter your selection: " ntpq1
+        read -rsp "Enter your selection: " -n1 ntpq1
         if (($ntpq1 >= 1 && $ntpq1 <= 4)); then
             echo ""
             break
@@ -330,13 +383,69 @@ if [ "$q3" = "Y" ]; then
     esac
 fi
 clear
-echo ""
-echo "Do proxy settings need to be configured for this machine to reach the internet?"
+echo "$ASCII"
+echo "Do you intend to use a HTTP(S) proxy with this server?"
 echo ""
 yn
-q4=$result
-clear
-if [ "$q4" = "Y" ]; then
+q4a=$ynresult
+
+if [ "$q4a" = "Y" ]; then
+    clear
+    while :; do    
+        echo "$ASCII"
+        echo "Select the option which best describes your proxy"
+        echo "" 
+        echo "1 - A regular proxy (has a http:// prefix) and DOES NOT decrypt external certificates"
+        echo "  (Commonly referred to as a transparent proxy)"
+        echo "2 - A regular proxy (has a http:// prefix) and DOES decrypt external certificates and then re-encrypt the traffic with its own certificate"
+        echo "  (Commonly referred to as a non-transparent proxy)"
+        echo "3 - A secure proxy (has a https:// prefix) and DOES NOT decrypt external certificates and then re-encrypt the traffic with its own certificate"
+        echo "  (Commonly referred to as a secure transparent proxy, a TLS connection is always established between the client and the proxy server)"
+        echo "4 - A secure proxy (has a https:// prefix) and DOES decrypt external certificates and then re-encrypt the traffic with its own certificate"
+        echo "  (Commonly referred to as a secure non-transparent proxy, a TLS connection is always established between the client and the proxy server)"
+        echo ""
+        read -rsp "Enter your selection: " -n1 proxyq1
+        if (($proxyq1 >= 1 && $proxyq1 <= 4)); then
+            echo ""
+            break
+        else
+            clear
+            echo "Not a valid selection, please try again"
+        fi
+    done
+    clear
+    echo "$ASCII"
+    case $proxyq1 in
+        1)
+            echo "This should work, details will be collected in the next step"
+            proxy_details="Y"
+            proxy_type="1 - A regular proxy (has a http:// prefix) and DOES NOT decrypt external certificates"
+        ;;
+        2)
+            echo "This should work, however if the proxy certificate is self-signed (not publicly trusted) some functionality may not work"
+            echo "specifically, the ability to remotely restart and upgrade the CPX, but the main funcion of collecting and sending monitoring data should still work"
+            echo "details will be collected in the next step"
+            proxy_details="Y"
+            proxy_type="2 - A regular proxy (has a http:// prefix) and DOES decrypt external certificates and then re-encrypt the traffic with its own certificate"
+        ;;
+        3)
+            echo "Not working according to my testing"
+            #need to test with the proxy Dan said we had
+            proxy_type="3 - A secure proxy (has a https:// prefix) and DOES NOT decrypt external certificates and then re-encrypt the traffic with its own certificate"
+        ;;
+        4)
+            echo "Not working according to my testing"
+            #need to test with the proxy Dan said we had
+            proxy_type="4 - A secure proxy (has a https:// prefix) and DOES decrypt external certificates and then re-encrypt the traffic with its own certificate"
+        ;;
+    esac
+    sed -i "s/proxy_type:.*/proxy_type: $proxy_type/" /symphony/setup-config
+    echo ""
+    read -rsp $'Press any key to continue...' -n1 key
+    clear
+fi
+
+if [ "$proxy_details" = "Y" ]; then
     echo ""
     echo "What proxy information will you be providing?"
     echo ""
@@ -344,8 +453,8 @@ if [ "$q4" = "Y" ]; then
     echo "2 - A hostname/FQDN and port"
     echo ""
     while :; do
-        read -p "Enter your selection: " proxy_question
-        if [[ "$proxy_question" = "1" || "$proxy_question" = "2" ]]; then
+        read -rsp "Enter your selection: " -n1 proxyq1
+        if [[ "$proxyq1" = "1" || "$proxyq1" = "2" ]]; then
             echo ""
             break
         else
@@ -353,6 +462,7 @@ if [ "$q4" = "Y" ]; then
         fi
     done
     clear
+    echo "$ASCII"
     echo ""
     while :; do
         read -p "First, enter the port number: " pn
@@ -366,7 +476,7 @@ if [ "$q4" = "Y" ]; then
             echo ""
         fi
     done
-    case $proxy_question in
+    case $proxyq1 in
         1)
             echo "And now enter the proxy IP address"
             echo ""
@@ -376,7 +486,7 @@ if [ "$q4" = "Y" ]; then
             sed -i "s/proxy_ip:.*/proxy_ip: $pip/" /symphony/setup-config
         ;;
         2)
-            echo "First, enter just the proxy hostname/FQDN"
+            echo "And now enter the proxy hostname/FQDN"
             echo ""
             vhn
             phn=$result
@@ -388,34 +498,32 @@ fi
 ##################################################################################
 # confirm with user that all details are correct
 clear
+echo "$ASCII"
 echo ""
-echo "Please check the details below"
 echo ""
-echo ""
-echo "IP and subnetmask for this machine:             "$ip"/"$sn
-echo "The default gateway for this machine:           "$gw
-echo "The DNS server(s) this machine will use: DNS 1: "$dns1
+echo "IP and subnetmask for this machine:                   "$ip"/"$sn
+echo "The default gateway for this machine:                 "$gw
+echo "The DNS server(s) this machine will use:       DNS 1: "$dns1
 if [ "$dns2q" = "Y" ]; then
-    echo "                                         DNS 2: "$dns2
+    echo "                                               DNS 2: "$dns2
 fi
 if [ "$dns3q" = "Y" ]; then
-    echo "                                         DNS 3: "$dns3
+    echo "                                               DNS 3: "$dns3
 fi
-echo "The hostname for this machine will be:          "$hostname
+echo "The hostname for this machine will be:                "$hostname
 if [ "$ntpq1" = "1" ] || [ "$ntpq1" = "3" ]; then
     ntpstring="pool "$ntpv" iburst"
-    echo "You have chosen to use the NTP pool:            "$ntpv
+    echo "You have chosen to use the NTP pool:                  "$ntpv
     elif [ "$ntpq1" = "2" ] || [ "$ntpq1" = "4" ]; then
     ntpstring="server "$ntpv" iburst"
-    echo "You have chosen this single NTP server:         "$ntpv
+    echo "You have chosen this single NTP server:               "$ntpv
 else
-    echo "This machine will use the default NPT pool:     2.debian.pool.ntp.org"
+    echo "This machine will use the default NPT pool:           2.debian.pool.ntp.org"
 fi
-echo ""
-if [ "$q4" = "Y" ]; then
-    echo "This proxy to use for communication is:         "$proxy
+if [ "$proxy_details" = "Y" ]; then
+    echo "This proxy to use for communication is:               "$proxy
 else
-    echo "No proxy settings suppied/required"
+    echo "No proxy settings suppied/required                    N/A"
 fi
 echo ""
 echo ""
@@ -423,7 +531,7 @@ echo "Are all of the details above correct?"
 echo "( N will restart this setup script )"
 echo ""
 yn
-conf=$result
+conf=$ynresult
 echo ""
 if [ "$conf" = "Y" ]; then
     echo ""
@@ -537,8 +645,8 @@ fi
 echo ""
 ##################################################################################
 #Setting the proxy settings (only if the user indicated a proxy is to be used)
-if [ "$q4" = "Y" ]; then
-    #write the /etc/profile.d/proxy.sh file
+if [ "$proxy_details" = "Y" ]; then
+    #write the /etc/profile.d/proxy.sh file which is triggered at login
     if [ ! -f /etc/profile.d/proxy.sh ]; then
         touch /etc/profile.d/proxy.sh
         echo "/etc/profile.d/proxy.sh file successfully created"
@@ -554,7 +662,7 @@ if [ "$q4" = "Y" ]; then
     fi
     fn="/etc/profile.d/proxy.sh"
     > $fn
-    echo "#!/bin/bash"
+    echo "#!/bin/bash"  >> $fn
     echo "# http/https/ftp/no_proxy" >> $fn
     echo "export http_proxy=\"http://"$proxy"/\"" >> $fn
     echo "export https_proxy=\"http://"$proxy"/\"" >> $fn
@@ -567,9 +675,27 @@ if [ "$q4" = "Y" ]; then
     echo "export NO_PROXY=\"127.0.0.1,localhost\"" >> $fn
 
     chmod +x /etc/profile.d/proxy.sh
-    /etc/profile.d/proxy.sh
+    # Create a service so that settings are applied at boot and not just login
+    if [ ! -f /etc/systemd/system/proxy.service ]; then
+        touch /etc/systemd/system/proxy.service
+    fi
+    svc="/etc/systemd/system/proxy.service"
+    > $svc
+    echo "[Unit]
+Description=Script to apply proxy server settings
 
+[Service]
+ExecStart=/usr/bin/sh /etc/profile.d/proxy.sh
+Restart=on-failure
+TimeoutSec=5s
+
+[Install]
+WantedBy=multi-user.target
+" >> $svc
+    systemctl enable proxy
+    systemctl start proxy
     echo "/etc/profile.d/proxy.sh file populated successfully"
+    echo "Proxy service created and started successfully"
     echo "Proxy settings configured"
 else
     echo "No Proxy settings provided"
@@ -592,30 +718,30 @@ echo "Testing network connectivity by pinging the default gateway"
 ### Ping the gateway to confirm local network connectivity
 ping_gw=$(ping -c 1 "$gw" > /dev/null)
 if [ $? -eq 0 ]; then
-    echo "Default Gateway is responding"
+    echo "Default Gateway response OK"
     ip_check1="OK"
 else
     ip_check1="FAIL"
-    echo "Default Gateway is NOT responding"
+    echo "Default Gateway failed to respond"
 fi
 if [ "$ip_check1" = "OK" ]; then
     ### Ping Google DNS IP to confirm internet connectivity
     ping_dns_ip=$(ping -c 1 "8.8.8.8" > /dev/null)
     if [ $? -eq 0 ]; then
         ip_check2="OK"
-        echo "Google DNS IP is responding"
+        echo "Google DNS IP response OK"
     else
         ip_check2="FAIL"
-        echo "Google DNS IP is NOT responding"
+        echo "Google DNS IP failed to respond"
     fi
     ### Ping Google Domain to confirm DNS functionality
     ping_dns_d=$(ping -c 1 "google.com" > /dev/null)
     if [ $? -eq 0 ]; then
         ip_check3="OK"
-        echo "google.com is resolving to an IP"
+        echo "google.com resolution to IP OK"
     else
         ip_check3="FAIL"
-        echo "google.com is NOT resolving to an IP"
+        echo "google.com resolution to IP failed"
     fi
 elif [ "$ip_check1" != "OK" ]; then
     echo ""
@@ -638,83 +764,55 @@ sed -i "s/ip_8.8.8.8:.*/ip_8.8.8.8: $ip_check2/" /symphony/setup-config
 sed -i "s/ip_resolve:.*/ip_resolve: $ip_check3/" /symphony/setup-config
 
 # Test WGETs to the Symphony URLs
-portal6="https://portal.vnocsymphony.com"
+portal="https://portal.vnocsymphony.com"
 portal5="https://portal5.avisplsymphony.com/symphony-portal"
-cloud6="https://cloud.vnocsymphony.com"
+cloud="https://cloud.vnocsymphony.com"
 cloud5="https://cloud5.avisplsymphony.com/symphony-cloud-api"
 registry="https://registry.vnocsymphony.com"
 
-echo "#####################################################################################################"
-reply1=$(wget -T 3 --no-check-certificate --delete-after ${portal6} 2>&1)
-c1=$(echo "$reply1" |grep "connected")
-if [ `expr length "$c1"` != "0" ]; then
-    echo $portal6
-    echo "Is reachable"
-    portal6_reachable="OK"
-else
-    echo $portal6
-    echo "Is NOT reachable"
-    portal6_reachable="Failed"
-fi
-echo "#####################################################################################################"
-reply2=$(wget -T 3 --no-check-certificate --delete-after ${portal5} 2>&1)
-c2=$(echo "$reply2" |grep "connected")
-if [ `expr length "$c2"` != "0" ]; then
-    echo $portal5
-    echo "Is reachable"
-    portal5_reachable="OK"
-else
-    echo $portal5
-    echo "Is NOT reachable"
-    portal5_reachable="FAIL"
-fi
-echo "#####################################################################################################"
-reply3=$(wget -T 3 --no-check-certificate --delete-after ${cloud6} 2>&1)
-c3=$(echo "$reply3" |grep "connected")
-if [ `expr length "$c3"` != "0" ]; then
-    echo $cloud6
-    echo "Is reachable"
-    cloud6_reachable="OK"
-else
-    echo $cloud6
-    echo "Is NOT reachable"
-    cloud6_reachable="FAIL"
-fi
-echo "#####################################################################################################"
-reply4=$(wget -T 3 --no-check-certificate --delete-after ${cloud5} 2>&1)
-c4=$(echo "$reply4" |grep "connected")
-if [ `expr length "$c4"` != "0" ]; then
-    echo $cloud5
-    echo "Is reachable"
-    cloud5_reachable="OK"
-else
-    echo $cloud5
-    echo "Is NOT reachable"
-    cloud5_reachable="FAIL"
-fi
-echo "#####################################################################################################"
-reply5=$(wget -T 3 --no-check-certificate --delete-after ${registry} 2>&1)
-c5=$(echo "$reply5" |grep "connected")
-if [ `expr length "$c5"` != "0" ]; then
-    echo $registry
-    echo "Is reachable"
-    registry_reachable="OK"
-else
-    echo $registry
-    echo "Is NOT reachable"
-    registry_reachable="FAIL"
-fi
-echo "#####################################################################################################"
+# Test wgets
+wget_test $portal
+portal_wget=$status_code
+wget_test $portal5
+portal5_wget=$status_code
+wget_test $cloud
+cloud_wget=$status_code
+wget_test $cloud5
+cloud5_wget=$status_code
+wget_test $registry
+registry_wget=$status_code
+echo "#########################################################"
+sed -i "s/wget_portal:.*/wget_portal: $portal_wget/" /symphony/setup-config
+sed -i "s/wget_portal5:.*/wget_portal5: $portal5_wget/" /symphony/setup-config
+sed -i "s/wget_cloud:.*/wget_cloud: $cloud_wget/" /symphony/setup-config
+sed -i "s/wget_cloud5:.*/wget_cloud5: $cloud5_wget/" /symphony/setup-config
+sed -i "s/wget_registry:.*/wget_registry: $registry_wget/" /symphony/setup-config
 
-sed -i "s/wget_portal6:.*/wget_portal6: $portal6_reachable/" /symphony/setup-config
-sed -i "s/wget_portal5:.*/wget_portal5: $portal5_reachable/" /symphony/setup-config
-sed -i "s/wget_cloud6:.*/wget_cloud6: $cloud6_reachable/" /symphony/setup-config
-sed -i "s/wget_cloud5:.*/wget_cloud5: $cloud5_reachable/" /symphony/setup-config
-sed -i "s/wget_registry:.*/wget_registry: $registry_reachable/" /symphony/setup-config
+# Test curls
+curl_test $portal
+portal_codes=$final_code
+curl_test $portal5
+portal5_codes=$final_code
+curl_test $cloud
+cloud_codes=$final_code
+curl_test $cloud5
+cloud5_codes=$final_code
+curl_test $registry
+registry_codes=$final_code
+
+echo "#########################################################"
+sed -i "s/curl_portal:.*/curl_portal:   $portal_codes/" /symphony/setup-config
+sed -i "s/curl_portal5:.*/curl_portal5:  $portal5_codes/" /symphony/setup-config
+sed -i "s/curl_cloud:.*/curl_cloud:    $cloud_codes/" /symphony/setup-config
+sed -i "s/curl_cloud5:.*/curl_cloud5:   $cloud5_codes/" /symphony/setup-config
+sed -i "s/curl_registry:.*/curl_registry: $registry_codes/" /symphony/setup-config
+
+echo ""
+read -rsp $'Press any key to continue the setup script...' -n1 key
 
 clear
 
-if [ "$portal6_reachable" != "OK" ] || [ "$portal5_reachable" != "OK" ] || [ "$cloud6_reachable" != "OK" ] || [ "$cloud5_reachable" != "OK" ] || [ "$registry_reachable" != "OK" ]; then
+if [ "$portal_wget" != "OK" ] || [ "$portal5_wget" != "OK" ] || [ "$cloud_wget" != "OK" ] || [ "$cloud5_wget" != "OK" ] || [ "$registry_wget" != "OK" ]; then
     echo ""
     echo "Unable to confirm connectivity to all services"
     echo ""
@@ -735,8 +833,8 @@ if [ "$portal6_reachable" != "OK" ] || [ "$portal5_reachable" != "OK" ] || [ "$c
     echo ""
     echo "#####  WGET tests #####"
     echo ""
-    if [ "$portal_reachable" != "OK" ]; then
-        echo "The WGET to $portal6 failed, "
+    if [ "$portal_wget" != "OK" ]; then
+        echo "The WGET to $portal failed, "
     else
         echo "The ping test to 8.8.8.8 (a Google DNS server) was successful, internet connectivity is confirmed"
     fi
@@ -755,20 +853,20 @@ if [ "$portal6_reachable" != "OK" ] || [ "$portal5_reachable" != "OK" ] || [ "$c
         echo ""
         read -rsp $'Press any key to restart this part of the setup script again...' -n1 key
         # clear the values from the setup-config file
-        sed -i "s/wget_portal6:.*/wget_portal6: /" /symphony/setup-config
+        sed -i "s/wget_portal:.*/wget_portal: /" /symphony/setup-config
         sed -i "s/wget_portal5:.*/wget_portal5: /" /symphony/setup-config
-        sed -i "s/wget_cloud6:.*/wget_cloud6: /" /symphony/setup-config
+        sed -i "s/wget_cloud:.*/wget_cloud: /" /symphony/setup-config
         sed -i "s/wget_cloud5:.*/wget_cloud5: /" /symphony/setup-config
         sed -i "s/wget_registry:.*/wget_registry: /" /symphony/setup-config
         # trigger the login script again
         sudo su -
     fi
 else
-    sed -i "s/portal6:.*/portal6: $portal6_reachable/" /symphony/setup-config
-    sed -i "s/portal5:.*/portal5: $portal5_reachable/" /symphony/setup-config
-    sed -i "s/cloud6:.*/cloud6: $cloud6_reachable/" /symphony/setup-config
-    sed -i "s/cloud5:.*/cloud5: $cloud5_reachable/" /symphony/setup-config
-    sed -i "s/registry:.*/registry: $registry_reachable/" /symphony/setup-config
+    sed -i "s/portal:.*/portal: $portal_wget/" /symphony/setup-config
+    sed -i "s/portal5:.*/portal5: $portal5_wget/" /symphony/setup-config
+    sed -i "s/cloud:.*/cloud: $cloud_wget/" /symphony/setup-config
+    sed -i "s/cloud5:.*/cloud5: $cloud5_wget/" /symphony/setup-config
+    sed -i "s/registry:.*/registry: $registry_wget/" /symphony/setup-config
 fi
 
 echo ""
@@ -787,7 +885,7 @@ echo "( Y to continue this session and manually enter details here )"
 echo "( N to exit this session and reconnect using an SSH client like Putty (setup will resume when you log in) )"
 echo ""
 yn
-c_or_q=$result
+c_or_q=$ynresult
 
 if [ "$c_or_q" = "N" ]; then
     echo "In your Putty/SSH client, enter symphony@$ip for the connection address"
@@ -797,3 +895,4 @@ if [ "$c_or_q" = "N" ]; then
     elif [ "$c_or_q" = "Y" ]; then
     sudo su -
 fi
+
