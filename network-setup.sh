@@ -56,40 +56,16 @@ vhn(){
     done
 }
 
-curl_test(){
-    echo "#########################################################"
-    echo ""
-    final_code=""
-    status_code=""
-    subdomain=$(echo "$1" | cut -d. -f1 | cut -d/ -f3)
-    echo "curl --write-out %{http_code} --silent --output /dev/null" $1
-    status_code=$(curl --write-out %{http_code} --silent --output /dev/null $1)
-    echo "HTTP response code "$status_code
-    final_code=$status_code
-    echo ""
-    echo "curl -L --write-out %{http_code} --silent --output /dev/null" $1
-    status_code=$(curl -L --write-out %{http_code} --silent --output /dev/null $1)
-    echo "HTTP response code "$status_code
-    final_code=$final_code"-"$status_code
-    echo ""
-    echo "curl -L -k --write-out %{http_code} --silent --output /dev/null" $1
-    status_code=$(curl -L -k --write-out %{http_code} --silent --output /dev/null $1)
-    echo "HTTP response code "$status_code
-    final_code=$final_code"-"$status_code
-    echo ""
-}
-
 wget_test(){
-        echo "#########################################################"
-        echo ""
         status_code=""
         chars=""
         reply=""
         subdomain=$(echo "$1" | cut -d. -f1 | cut -d/ -f3)
+        echo -n "wget "$subdomain
         reply=$(wget -T 3 --no-check-certificate --delete-after ${1} 2>&1)
         chars=$(echo "$reply" |grep "connected")
         if [ `expr length "$chars"` != "0" ]; then
-            echo $subdomain" OK"
+            echo " OK"
             status_code="OK"
         else
             echo $subdomain" Failed"
@@ -98,6 +74,28 @@ wget_test(){
         echo ""
 }
 
+curl_test(){
+    echo "#########################################################"
+    echo ""
+    final_code=""
+    status_code=""
+    subdomain=$(echo "$1" | cut -d. -f1 | cut -d/ -f3)
+    echo "curl ..." $1
+    status_code=$(curl --write-out %{http_code} --silent --output /dev/null $1)
+    echo "HTTP response code "$status_code
+    final_code=$status_code
+    echo ""
+    echo "curl -L ..." $1
+    status_code=$(curl -L --write-out %{http_code} --silent --output /dev/null $1)
+    echo "HTTP response code "$status_code
+    final_code=$final_code"-"$status_code
+    echo ""
+    echo "curl -L -k ..." $1
+    status_code=$(curl -L -k --write-out %{http_code} --silent --output /dev/null $1)
+    echo "HTTP response code "$status_code
+    final_code=$final_code"-"$status_code
+    echo ""
+}
 
 ###########################################################################
 ###############setting up file location variables
@@ -218,8 +216,8 @@ ip=$result
 clear
 echo "$ASCII"
 echo ""
-echo "Please provide the subnet mask for the "$ip " address"
-echo "( use slash notation, like /24 or /27 see below table )
+echo "Please provide the subnet mask for the "$ip " address
+( use slash notation, like /24 or /27 see below table )
 
 255.255.255.252 = /30	255.255.255.248	= /29
 255.255.255.240	= /28	255.255.255.224	= /27
@@ -400,12 +398,13 @@ if [ "$q4a" = "Y" ]; then
         echo "2 - A regular proxy (has a http:// prefix) and DOES decrypt external certificates and then re-encrypt the traffic with its own certificate"
         echo "  (Commonly referred to as a non-transparent proxy)"
         echo "3 - A secure proxy (has a https:// prefix) and DOES NOT decrypt external certificates and then re-encrypt the traffic with its own certificate"
-        echo "  (Commonly referred to as a secure transparent proxy, a TLS connection is always established between the client and the proxy server)"
+        echo "  (Commonly referred to as a secure transparent proxy (a TLS connection is always established between the client and the proxy server))"
         echo "4 - A secure proxy (has a https:// prefix) and DOES decrypt external certificates and then re-encrypt the traffic with its own certificate"
-        echo "  (Commonly referred to as a secure non-transparent proxy, a TLS connection is always established between the client and the proxy server)"
+        echo "  (Commonly referred to as a secure non-transparent proxy (a TLS connection is always established between the client and the proxy server))"
+        echo "5 - Skip proxy settings"
         echo ""
         read -rsp "Enter your selection: " -n1 proxyq1
-        if (($proxyq1 >= 1 && $proxyq1 <= 4)); then
+        if (($proxyq1 >= 1 && $proxyq1 <= 5)); then
             echo ""
             break
         else
@@ -415,6 +414,7 @@ if [ "$q4a" = "Y" ]; then
     done
     clear
     echo "$ASCII"
+    show_message=1
     case $proxyq1 in
         1)
             echo "This should work, details will be collected in the next step"
@@ -438,10 +438,15 @@ if [ "$q4a" = "Y" ]; then
             #need to test with the proxy Dan said we had
             proxy_type="4 - A secure proxy (has a https:// prefix) and DOES decrypt external certificates and then re-encrypt the traffic with its own certificate"
         ;;
+        5)
+            show_message=0
+        ;;
     esac
-    sed -i "s/proxy_type:.*/proxy_type: $proxy_type/" /symphony/setup-config
-    echo ""
-    read -rsp $'Press any key to continue...' -n1 key
+    if [ $show_message = 1 ]; then
+        sed -i "s/proxy_type:.*/proxy_type: $proxy_type/" /symphony/setup-config
+        echo ""
+        read -rsp $'Press any key to continue...' -n1 key
+    fi
     clear
 fi
 
@@ -765,12 +770,16 @@ sed -i "s/ip_resolve:.*/ip_resolve: $ip_check3/" /symphony/setup-config
 
 # Test WGETs to the Symphony URLs
 portal="https://portal.vnocsymphony.com"
-portal5="https://portal5.avisplsymphony.com/symphony-portal"
+#portal5="https://portal5.avisplsymphony.com/symphony-portal"
+portal5="https://portal5.avisplsymphony.com"
 cloud="https://cloud.vnocsymphony.com"
-cloud5="https://cloud5.avisplsymphony.com/symphony-cloud-api"
+#cloud5="https://cloud5.avisplsymphony.com/symphony-cloud-api"
+cloud5="https://cloud5.avisplsymphony.com"
 registry="https://registry.vnocsymphony.com"
 
 # Test wgets
+echo "#########################################################"
+echo ""
 wget_test $portal
 portal_wget=$status_code
 wget_test $portal5
@@ -801,11 +810,12 @@ curl_test $registry
 registry_codes=$final_code
 
 echo "#########################################################"
-sed -i "s/curl_portal:.*/curl_portal:   $portal_codes/" /symphony/setup-config
-sed -i "s/curl_portal5:.*/curl_portal5:  $portal5_codes/" /symphony/setup-config
-sed -i "s/curl_cloud:.*/curl_cloud:    $cloud_codes/" /symphony/setup-config
-sed -i "s/curl_cloud5:.*/curl_cloud5:   $cloud5_codes/" /symphony/setup-config
+sed -i "s/curl_portal:.*/curl_portal: $portal_codes/" /symphony/setup-config
+sed -i "s/curl_portal5:.*/curl_portal5: $portal5_codes/" /symphony/setup-config
+sed -i "s/curl_cloud:.*/curl_cloud: $cloud_codes/" /symphony/setup-config
+sed -i "s/curl_cloud5:.*/curl_cloud5: $cloud5_codes/" /symphony/setup-config
 sed -i "s/curl_registry:.*/curl_registry: $registry_codes/" /symphony/setup-config
+
 
 echo ""
 read -rsp $'Press any key to continue the setup script...' -n1 key
@@ -862,11 +872,11 @@ if [ "$portal_wget" != "OK" ] || [ "$portal5_wget" != "OK" ] || [ "$cloud_wget" 
         sudo su -
     fi
 else
-    sed -i "s/portal:.*/portal: $portal_wget/" /symphony/setup-config
-    sed -i "s/portal5:.*/portal5: $portal5_wget/" /symphony/setup-config
-    sed -i "s/cloud:.*/cloud: $cloud_wget/" /symphony/setup-config
-    sed -i "s/cloud5:.*/cloud5: $cloud5_wget/" /symphony/setup-config
-    sed -i "s/registry:.*/registry: $registry_wget/" /symphony/setup-config
+    sed -i "s/wget_portal:.*/wget_portal: $portal_wget/" /symphony/setup-config
+    sed -i "s/wget_portal5:.*/wget_portal5: $portal5_wget/" /symphony/setup-config
+    sed -i "s/wget_cloud:.*/wget_cloud: $cloud_wget/" /symphony/setup-config
+    sed -i "s/wget_cloud5:.*/wget_cloud5: $cloud5_wget/" /symphony/setup-config
+    sed -i "s/wget_registry:.*/wget_registry: $registry_wget/" /symphony/setup-config
 fi
 
 echo ""

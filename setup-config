@@ -2,8 +2,8 @@
 setup_finished:
 #######################  Network Checks  ###########################
 gw_ping:
-ip_8.8.8.8:
-ip_resolve:
+ping_ext_ip:
+ping_ext_hn:
 wget_portal:
 wget_portal5:
 wget_cloud:
@@ -15,14 +15,15 @@ wget_registry:
 # Response code 3: curl -L -k
 # -L = follow redirections
 # -k = trust all certificates
-# Response code 1 - 2 - 3
 curl_portal:
 curl_portal5:
 curl_cloud:
 curl_cloud5:
 curl_registry:
+# 000 = Failed
 # 200 = OK
 # 302 = Redirected
+# 404 = Server responded saying no webpage at that address (the expected result for cloud5)
 
 ################### VM  Network Configuration ######################
 
